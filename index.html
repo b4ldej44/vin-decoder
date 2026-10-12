@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07080a">
+<meta name="color-scheme" content="dark">
+<title>VIN-декодер BMW, Mercedes, Audi</title>
+<link rel="stylesheet" href="vin.css">
+</head>
+<body>
+<main class="wrap">
+  <header class="head">
+    <h1>VIN-декодер</h1>
+    <p class="sub">BMW · Mercedes-Benz · Audi — бесплатно, без регистрации</p>
+  </header>
+
+  <form id="form" class="card search" autocomplete="off">
+    <input id="vin" name="vin" maxlength="17" spellcheck="false"
+           placeholder="Введите VIN, 17 символов" aria-label="VIN">
+    <button type="submit">Расшифровать</button>
+    <div id="err" class="err" hidden></div>
+  </form>
+
+  <section id="result" hidden>
+    <div class="card">
+      <h2>Что зашито в VIN</h2>
+      <table class="kv" id="basic"></table>
+      <p class="note" id="basic-note"></p>
+    </div>
+
+    <div class="card">
+      <h2>Справочник NHTSA <span class="tag">США</span></h2>
+      <div id="nhtsa"><p class="note">Загружаю…</p></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Комплектация по кодам опций</h2>
+    <p class="note">
+      В самом VIN список опций не хранится — он есть только в базах производителей.
+      Сами коды можно взять бесплатно: у <b>Audi</b> они напечатаны на наклейке в нише запасного
+      колеса и в сервисной книжке, у <b>Mercedes</b> — в карте данных (Datenkarte), которую распечатает
+      любой дилер, у <b>BMW</b> — в выписке дилера или в любом отчёте с SA-кодами.
+      Вставьте коды или весь текст отчёта — декодер сам найдёт коды.
+    </p>
+    <div class="brands" role="radiogroup" aria-label="Марка">
+      <label><input type="radio" name="brand" value="bmw" checked> BMW (SA)</label>
+      <label><input type="radio" name="brand" value="mb"> Mercedes</label>
+      <label><input type="radio" name="brand" value="audi"> Audi (PR)</label>
+    </div>
+    <textarea id="codes" rows="4" spellcheck="false"
+              placeholder="Например: S2VB S302A S494A S5ACA S610A"></textarea>
+    <table class="codes" id="codes-out" hidden>
+      <thead><tr><th>Код</th><th>Опция</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="note" id="codes-note"></p>
+  </section>
+
+  <footer class="foot">
+    Расшифровка VIN и справочник кодов работают прямо в браузере, данные никуда не отправляются.
+    Исключение — запрос в открытый справочник NHTSA (vpic.nhtsa.dot.gov).
+  </footer>
+</main>
+<script src="codes.js"></script>
+<script src="vin.js"></script>
+</body>
+</html>

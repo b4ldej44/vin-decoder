@@ -1,0 +1,80 @@
+:root{
+  --bg:#07080a;
+  --surface:rgba(255,255,255,.035);
+  --surface-2:rgba(255,255,255,.065);
+  --line:rgba(255,255,255,.09);
+  --fg:#e9ebef;
+  --dim:#9aa0ab;
+  --dim2:#616672;
+  --up:#2fbd77; --dn:#e8494d; --vola:#e0a13c;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; color:var(--fg);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:
+    radial-gradient(1100px 620px at 12% -8%, rgba(255,255,255,.055), transparent 60%),
+    var(--bg);
+  min-height:100vh;
+}
+[hidden]{display:none !important}
+.wrap{max-width:760px; margin:0 auto; padding:28px 16px 48px}
+.back{color:var(--dim); text-decoration:none; font-size:13px; display:inline-block; margin-bottom:10px}
+.back:hover{color:var(--fg)}
+.head h1{margin:0; font-size:26px; letter-spacing:-.01em}
+.sub{margin:4px 0 20px; color:var(--dim)}
+.card{
+  background:var(--surface); border:1px solid var(--line); border-radius:12px;
+  padding:16px; margin-bottom:14px;
+}
+.card h2{margin:0 0 10px; font-size:15px; font-weight:600}
+.tag{font-size:11px; color:var(--dim); border:1px solid var(--line); border-radius:6px; padding:1px 6px; margin-left:4px; font-weight:400}
+
+.search{display:flex; flex-wrap:wrap; gap:8px}
+.search input{
+  flex:1 1 260px; min-width:0; background:var(--surface-2); color:var(--fg);
+  border:1px solid var(--line); border-radius:8px; padding:11px 12px;
+  font:16px var(--mono); letter-spacing:.06em; text-transform:uppercase;
+}
+.search input:focus,textarea:focus{outline:none; border-color:rgba(255,255,255,.3)}
+.search button{
+  background:var(--fg); color:var(--bg); border:0; border-radius:8px;
+  padding:11px 18px; font-weight:600; font-size:14px; cursor:pointer;
+}
+.search button:hover{opacity:.9}
+.err{flex-basis:100%; color:var(--dn)}
+
+.kv,.codes{width:100%; border-collapse:collapse}
+.kv td,.codes td,.codes th{padding:7px 0; border-bottom:1px solid var(--line); vertical-align:top}
+.kv tr:last-child td,.codes tr:last-child td{border-bottom:0}
+.kv td:first-child{color:var(--dim); width:42%; padding-right:12px}
+.codes th{text-align:left; color:var(--dim); font-weight:400}
+.codes td:first-child,.codes th:first-child{width:90px; padding-right:12px}
+.mono{font-family:var(--mono)}
+.ok{color:var(--up)} .warn{color:var(--vola)} .bad{color:var(--dn)}
+.unknown{color:var(--dim2)}
+.unknown a{color:var(--dim)}
+
+.vinpos{display:flex; flex-wrap:wrap; gap:2px; margin:0 0 12px; font-family:var(--mono)}
+.vinpos span{
+  display:inline-flex; flex-direction:column; align-items:center; min-width:22px;
+  padding:3px 2px; border-radius:4px; background:var(--surface-2); font-size:15px;
+}
+.vinpos small{font-size:9px; color:var(--dim2)}
+.vinpos .g1{background:rgba(92,143,224,.18)}
+.vinpos .g2{background:rgba(224,161,60,.16)}
+.vinpos .g3{background:rgba(47,189,119,.14)}
+
+.note{color:var(--dim); margin:8px 0 0; font-size:13px}
+.brands{display:flex; flex-wrap:wrap; gap:14px; margin:12px 0 8px}
+.brands label{cursor:pointer}
+textarea{
+  width:100%; background:var(--surface-2); color:var(--fg); border:1px solid var(--line);
+  border-radius:8px; padding:10px 12px; font:14px var(--mono); resize:vertical;
+}
+.codes{margin-top:10px}
+.foot{color:var(--dim2); font-size:12px; margin-top:20px}
+@media (max-width:440px){
+  .vinpos span{min-width:17px; font-size:13px; padding:2px 1px}
+}
