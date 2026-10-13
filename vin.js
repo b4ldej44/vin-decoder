@@ -141,6 +141,93 @@
     }
   }
 
+  // ---------------------------------------------------------------- shared builds
+
+  // Общая база комплектаций в Supabase (см. supabase-vin.sql): кто-то
+  // сохранил коды для VIN — остальные видят их сразу. Без настроек блок
+  // просто не показывается.
+  const CFG = window.VIN_CONFIG || window.SCREENER_CONFIG || {};
+  const DB = CFG.supabaseUrl && CFG.supabaseAnonKey;
+  let current = null;   // { vin, brand } последнего расшифрованного VIN
+  let sharedReq = 0;
+
+  async function rpc(name, args) {
+    const r = await fetch(`${CFG.supabaseUrl}/rest/v1/rpc/${name}`, {
+      method: "POST",
+      headers: { apikey: CFG.supabaseAnonKey, "Content-Type": "application/json" },
+      body: JSON.stringify(args),
+    });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || r.status);
+    return r.json();
+  }
+
+  function codesTable(brand, codes) {
+    const dict = D.options[brand] || {};
+    const rows = codes.map((c) => dict[c]
+      ? `<tr><td class="mono">${c}</td><td>${esc(dict[c])}</td></tr>`
+      : `<tr class="unknown"><td class="mono">${c}</td><td>${searchLink(brand, c)}</td></tr>`);
+    return `<table class="codes"><thead><tr><th>Код</th><th>Опция</th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
+  }
+
+  function plural(n, one, few, many) {
+    const m10 = n % 10, m100 = n % 100;
+    return m10 === 1 && m100 !== 11 ? one : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? few : many;
+  }
+
+  async function loadShared(vin, brand) {
+    const card = $("shared-card"), box = $("shared");
+    const req = ++sharedReq;
+    card.hidden = !DB || !brand;
+    if (card.hidden) return;
+    box.innerHTML = '<p class="note">Ищу…</p>';
+    try {
+      const [row] = await rpc("vin_build_get", { p_vin: vin });
+      if (req !== sharedReq) return;
+      if (!row) {
+        box.innerHTML = '<p class="note">Для этого VIN комплектацию ещё никто не сохранил. ' +
+          "Если вы знаете коды опций — вставьте их ниже и сохраните, следующий человек увидит их сразу.</p>";
+        return;
+      }
+      const n = row.confirmations;
+      const trust = n > 1
+        ? `<span class="ok">подтвердили ${n} ${plural(n, "человек", "человека", "человек")}</span>`
+        : '<span class="warn">прислал один человек, пока не подтверждено</span>';
+      box.innerHTML = `<p class="note">Кодов: ${row.codes.length} · ${trust} · ` +
+        `обновлено ${new Date(row.updated_at).toLocaleDateString("ru-RU")}</p>` + codesTable(row.brand, row.codes);
+    } catch {
+      if (req === sharedReq) box.innerHTML = '<p class="note">Общая база сейчас недоступна.</p>';
+    }
+  }
+
+  function renderSave(codes) {
+    const save = $("save"), btn = $("save-btn");
+    save.hidden = !DB || !current || !current.brand;
+    if (save.hidden) return;
+    btn.textContent = `Сохранить в общую базу для ${current.vin}`;
+    btn.disabled = codes.length < 3;
+    $("save-note").textContent = codes.length < 3 ? "Нужно хотя бы 3 кода." : "";
+  }
+
+  async function saveShared() {
+    const brand = document.querySelector("input[name=brand]:checked").value;
+    const codes = parseCodes($("codes").value, brand);
+    if (!current || codes.length < 3) return;
+    if (brand !== current.brand &&
+        !confirm(`VIN принадлежит ${BRAND[current.brand]}, а выбраны коды ${BRAND[brand]}. Всё равно сохранить?`)) return;
+    const btn = $("save-btn");
+    btn.disabled = true;
+    $("save-note").textContent = "Сохраняю…";
+    try {
+      await rpc("vin_build_add", { p_vin: current.vin, p_brand: brand, p_codes: codes });
+      $("save-note").innerHTML = '<span class="ok">Сохранено, спасибо!</span>';
+      loadShared(current.vin, current.brand);
+    } catch (e) {
+      $("save-note").innerHTML = `<span class="bad">${/too many/.test(e.message)
+        ? "Слишком много сохранений с вашего адреса за сутки." : "Не получилось сохранить."}</span>`;
+    }
+    btn.disabled = false;
+  }
+
   // ---------------------------------------------------------------- VIN form
 
   function run(raw) {
@@ -149,7 +236,7 @@
     const err = validate(vin);
     $("err").hidden = !err;
     $("err").textContent = err || "";
-    if (err) { $("result").hidden = true; return; }
+    if (err) { $("result").hidden = true; current = null; renderCodes(); return; }
 
     const { brand, rows, notes } = decode(vin);
     $("basic").innerHTML = rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("");
@@ -161,10 +248,13 @@
 
     if (brand) {
       const radio = document.querySelector(`input[name=brand][value=${brand}]`);
-      if (radio && !radio.checked) { radio.checked = true; renderCodes(); }
+      if (radio) radio.checked = true;
     }
+    current = { vin, brand };
+    renderCodes();
     history.replaceState(null, "", "?vin=" + vin);
     loadNhtsa(vin);
+    loadShared(vin, brand);
   }
 
   $("form").addEventListener("submit", (e) => { e.preventDefault(); run($("vin").value); });
@@ -197,15 +287,20 @@
     let known = 0;
     table.tBodies[0].innerHTML = codes.map((c) => {
       if (dict[c]) { known++; return `<tr><td class="mono">${c}</td><td>${esc(dict[c])}</td></tr>`; }
-      const q = encodeURIComponent(`${SEARCH[brand]} ${c}`);
-      return `<tr class="unknown"><td class="mono">${c}</td><td>нет в справочнике · ` +
-             `<a href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">поискать</a></td></tr>`;
+      return `<tr class="unknown"><td class="mono">${c}</td><td>${searchLink(brand, c)}</td></tr>`;
     }).join("");
     $("codes-note").textContent = codes.length
       ? `Найдено кодов: ${codes.length}, расшифровано: ${known}.` : "";
+    renderSave(codes);
+  }
+
+  function searchLink(brand, c) {
+    const q = encodeURIComponent(`${SEARCH[brand]} ${c}`);
+    return `нет в справочнике · <a href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">поискать</a>`;
   }
 
   $("codes").addEventListener("input", renderCodes);
+  $("save-btn").addEventListener("click", saveShared);
   document.querySelectorAll("input[name=brand]").forEach((r) => r.addEventListener("change", renderCodes));
 
   const start = new URLSearchParams(location.search).get("vin");
